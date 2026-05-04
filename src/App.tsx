@@ -13,6 +13,7 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderTracking from "./pages/OrderTracking";
 import Orders from "./pages/Orders";
+import Addresses from "./pages/Addresses";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import DeliveryDashboard from "./pages/DeliveryDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
