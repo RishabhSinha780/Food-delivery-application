@@ -37,6 +37,7 @@ const App = () => (
               <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
               <Route path="/track/:id" element={<RequireAuth><OrderTracking /></RequireAuth>} />
               <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
+              <Route path="/addresses" element={<RequireAuth><Addresses /></RequireAuth>} />
               <Route path="/owner" element={<RequireAuth role="owner"><OwnerDashboard /></RequireAuth>} />
               <Route path="/delivery" element={<RequireAuth role="delivery"><DeliveryDashboard /></RequireAuth>} />
               <Route path="/admin" element={<RequireAuth role="admin"><AdminDashboard /></RequireAuth>} />
