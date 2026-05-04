@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { MapPin, Plus, Trash2 } from "lucide-react";
+import { MapPin, Plus, Trash2, Pencil, X, Check } from "lucide-react";
 
 export type Address = {
   id: string;
@@ -38,6 +38,29 @@ export default function Addresses() {
   const { addresses, refresh } = useAddresses();
   const [form, setForm] = useState({ label: "Home", line1: "", city: "Brooklyn", postal_code: "" });
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ label: "", line1: "", city: "", postal_code: "" });
+
+  function startEdit(a: Address) {
+    setEditingId(a.id);
+    setEditForm({ label: a.label, line1: a.line1, city: a.city, postal_code: a.postal_code || "" });
+  }
+  function cancelEdit() { setEditingId(null); }
+
+  async function saveEdit(id: string) {
+    if (!editForm.line1.trim()) { toast.error("Street address required"); return; }
+    if (editForm.line1.length > 200 || editForm.label.length > 50) { toast.error("Input too long"); return; }
+    const { error } = await supabase.from("addresses").update({
+      label: editForm.label.trim() || "Home",
+      line1: editForm.line1.trim(),
+      city: editForm.city.trim() || "Brooklyn",
+      postal_code: editForm.postal_code.trim() || null,
+    }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Address updated");
+    setEditingId(null);
+    refresh();
+  }
 
   async function add() {
     if (!user) return;
@@ -86,18 +109,44 @@ export default function Addresses() {
         <div className="space-y-3">
           {addresses.length === 0 && <p className="text-muted-foreground text-sm">No addresses saved yet.</p>}
           {addresses.map((a) => (
-            <div key={a.id} className="card-flat p-4 flex items-start justify-between gap-4">
-              <div className="flex gap-3">
-                <MapPin className="h-5 w-5 text-primary mt-0.5" />
-                <div>
-                  <div className="font-semibold">{a.label}</div>
-                  <div className="text-sm text-muted-foreground">{a.line1}</div>
-                  <div className="text-sm text-muted-foreground">{a.city}{a.postal_code ? `, ${a.postal_code}` : ""}</div>
+            <div key={a.id} className="card-flat p-4">
+              {editingId === a.id ? (
+                <div className="space-y-3">
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div><Label>Label</Label><Input maxLength={50} value={editForm.label} onChange={(e) => setEditForm({ ...editForm, label: e.target.value })} /></div>
+                    <div><Label>Postal code</Label><Input maxLength={20} value={editForm.postal_code} onChange={(e) => setEditForm({ ...editForm, postal_code: e.target.value })} /></div>
+                    <div className="sm:col-span-2"><Label>Street address</Label><Input maxLength={200} value={editForm.line1} onChange={(e) => setEditForm({ ...editForm, line1: e.target.value })} /></div>
+                    <div className="sm:col-span-2"><Label>City</Label><Input maxLength={100} value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} /></div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => saveEdit(a.id)} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+                      <Check className="h-4 w-4 mr-1" /> Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEdit} className="rounded-full">
+                      <X className="h-4 w-4 mr-1" /> Cancel
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => remove(a.id)} className="rounded-full">
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              ) : (
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex gap-3">
+                    <MapPin className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <div className="font-semibold">{a.label}</div>
+                      <div className="text-sm text-muted-foreground">{a.line1}</div>
+                      <div className="text-sm text-muted-foreground">{a.city}{a.postal_code ? `, ${a.postal_code}` : ""}</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => startEdit(a)} className="rounded-full">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => remove(a.id)} className="rounded-full">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
