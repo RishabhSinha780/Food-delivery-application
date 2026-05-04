@@ -79,7 +79,7 @@ export default function OwnerDashboard() {
 
                   <TabsContent value="orders">
                     <OrdersList orders={orders} onChange={async (id, status) => {
-                      await supabase.from("orders").update({ status }).eq("id", id);
+                      await supabase.from("orders").update({ status: status as "accepted" }).eq("id", id);
                       toast.success(`Order → ${status}`);
                     }} />
                   </TabsContent>

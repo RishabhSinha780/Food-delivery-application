@@ -46,10 +46,9 @@ export default function DeliveryDashboard() {
     load();
   };
 
-  const updateStatus = async (d: Delivery & { order: Order }, status: string) => {
+  const updateStatus = async (d: Delivery & { order: Order }, status: "picked_up" | "on_the_way" | "delivered") => {
     await supabase.from("deliveries").update({ status }).eq("id", d.id);
-    const orderStatus = status === "picked_up" ? "picked_up" : status === "on_the_way" ? "on_the_way" : status === "delivered" ? "delivered" : d.order.status;
-    await supabase.from("orders").update({ status: orderStatus }).eq("id", d.order_id);
+    await supabase.from("orders").update({ status }).eq("id", d.order_id);
     toast.success(`Status → ${status}`);
     load();
   };
