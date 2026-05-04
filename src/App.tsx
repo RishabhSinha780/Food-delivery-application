@@ -13,6 +13,7 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderTracking from "./pages/OrderTracking";
 import Orders from "./pages/Orders";
+import Addresses from "./pages/Addresses";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import DeliveryDashboard from "./pages/DeliveryDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
               <Route path="/track/:id" element={<RequireAuth><OrderTracking /></RequireAuth>} />
               <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
+              <Route path="/addresses" element={<RequireAuth><Addresses /></RequireAuth>} />
               <Route path="/owner" element={<RequireAuth role="owner"><OwnerDashboard /></RequireAuth>} />
               <Route path="/delivery" element={<RequireAuth role="delivery"><DeliveryDashboard /></RequireAuth>} />
               <Route path="/admin" element={<RequireAuth role="admin"><AdminDashboard /></RequireAuth>} />
