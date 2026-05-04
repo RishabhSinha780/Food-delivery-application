@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
+import { Link } from "react-router-dom";
+import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
 import { z } from "zod";
 
 const signupSchema = z.object({
@@ -66,6 +68,9 @@ function SignInForm({ onDone }: { onDone: () => void }) {
       <Button type="submit" disabled={loading} className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90">
         {loading ? "Signing in..." : "Sign in"}
       </Button>
+      <Link to="/forgot-password" className="block text-center text-sm underline text-muted-foreground">
+        Forgot password?
+      </Link>
     </form>
   );
 }
@@ -96,7 +101,11 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={submit} className="space-y-4 card-flat p-6">
       <div><Label>Display name</Label><Input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} required /></div>
       <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></div>
-      <div><Label>Password</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} /></div>
+      <div>
+        <Label>Password</Label>
+        <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
+        <PasswordStrengthMeter password={form.password} />
+      </div>
       <div>
         <Label className="mb-2 block">I am a...</Label>
         <RadioGroup value={form.role} onValueChange={(v) => setForm({ ...form, role: v as "customer" })} className="grid grid-cols-3 gap-2">
