@@ -43,11 +43,41 @@ export default function Addresses() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ label: "", line1: "", city: "", postal_code: "" });
 
+  const [editOriginal, setEditOriginal] = useState({ label: "", line1: "", city: "", postal_code: "" });
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  const isDirty = editingId !== null && (
+    editForm.label !== editOriginal.label ||
+    editForm.line1 !== editOriginal.line1 ||
+    editForm.city !== editOriginal.city ||
+    editForm.postal_code !== editOriginal.postal_code
+  );
+
+  // Block in-app navigation when there are unsaved changes
+  const blocker = useBlocker(isDirty);
+
+  // Warn on browser tab close / refresh / external nav
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
   function startEdit(a: Address) {
     setEditingId(a.id);
-    setEditForm({ label: a.label, line1: a.line1, city: a.city, postal_code: a.postal_code || "" });
+    const snap = { label: a.label, line1: a.line1, city: a.city, postal_code: a.postal_code || "" };
+    setEditForm(snap);
+    setEditOriginal(snap);
   }
-  function cancelEdit() { setEditingId(null); }
+  function requestCancel() {
+    if (isDirty) { setConfirmCancel(true); return; }
+    setEditingId(null);
+  }
+  function discardEdit() {
+    setConfirmCancel(false);
+    setEditingId(null);
+  }
 
   async function saveEdit(id: string) {
     if (!editForm.line1.trim()) { toast.error("Street address required"); return; }
