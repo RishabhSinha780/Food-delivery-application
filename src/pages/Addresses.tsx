@@ -5,8 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { MapPin, Plus, Trash2, Pencil, X, Check } from "lucide-react";
+import { useBlocker } from "react-router-dom";
 
 export type Address = {
   id: string;
@@ -41,11 +43,41 @@ export default function Addresses() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ label: "", line1: "", city: "", postal_code: "" });
 
+  const [editOriginal, setEditOriginal] = useState({ label: "", line1: "", city: "", postal_code: "" });
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  const isDirty = editingId !== null && (
+    editForm.label !== editOriginal.label ||
+    editForm.line1 !== editOriginal.line1 ||
+    editForm.city !== editOriginal.city ||
+    editForm.postal_code !== editOriginal.postal_code
+  );
+
+  // Block in-app navigation when there are unsaved changes
+  const blocker = useBlocker(isDirty);
+
+  // Warn on browser tab close / refresh / external nav
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
   function startEdit(a: Address) {
     setEditingId(a.id);
-    setEditForm({ label: a.label, line1: a.line1, city: a.city, postal_code: a.postal_code || "" });
+    const snap = { label: a.label, line1: a.line1, city: a.city, postal_code: a.postal_code || "" };
+    setEditForm(snap);
+    setEditOriginal(snap);
   }
-  function cancelEdit() { setEditingId(null); }
+  function requestCancel() {
+    if (isDirty) { setConfirmCancel(true); return; }
+    setEditingId(null);
+  }
+  function discardEdit() {
+    setConfirmCancel(false);
+    setEditingId(null);
+  }
 
   async function saveEdit(id: string) {
     if (!editForm.line1.trim()) { toast.error("Street address required"); return; }
@@ -122,7 +154,7 @@ export default function Addresses() {
                     <Button size="sm" onClick={() => saveEdit(a.id)} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
                       <Check className="h-4 w-4 mr-1" /> Save
                     </Button>
-                    <Button size="sm" variant="outline" onClick={cancelEdit} className="rounded-full">
+                    <Button size="sm" variant="outline" onClick={requestCancel} className="rounded-full">
                       <X className="h-4 w-4 mr-1" /> Cancel
                     </Button>
                   </div>
@@ -151,6 +183,32 @@ export default function Addresses() {
           ))}
         </div>
       </div>
+
+      <AlertDialog open={confirmCancel} onOpenChange={setConfirmCancel}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+            <AlertDialogDescription>Your edits to this address will be lost.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction onClick={discardEdit}>Discard</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={blocker.state === "blocked"} onOpenChange={(open) => { if (!open) blocker.reset?.(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave with unsaved changes?</AlertDialogTitle>
+            <AlertDialogDescription>You have unsaved edits to an address. Leave without saving?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => blocker.reset?.()}>Stay on page</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setEditingId(null); blocker.proceed?.(); }}>Leave</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
