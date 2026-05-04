@@ -154,7 +154,7 @@ export default function Addresses() {
                     <Button size="sm" onClick={() => saveEdit(a.id)} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
                       <Check className="h-4 w-4 mr-1" /> Save
                     </Button>
-                    <Button size="sm" variant="outline" onClick={cancelEdit} className="rounded-full">
+                    <Button size="sm" variant="outline" onClick={requestCancel} className="rounded-full">
                       <X className="h-4 w-4 mr-1" /> Cancel
                     </Button>
                   </div>
