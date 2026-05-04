@@ -8,6 +8,8 @@ import { CartProvider } from "@/lib/cart";
 import RequireAuth from "@/components/RequireAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import RestaurantDetail from "./pages/RestaurantDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -32,6 +34,8 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/restaurant/:id" element={<RestaurantDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
