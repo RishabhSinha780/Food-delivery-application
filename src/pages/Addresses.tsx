@@ -38,6 +38,29 @@ export default function Addresses() {
   const { addresses, refresh } = useAddresses();
   const [form, setForm] = useState({ label: "Home", line1: "", city: "Brooklyn", postal_code: "" });
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ label: "", line1: "", city: "", postal_code: "" });
+
+  function startEdit(a: Address) {
+    setEditingId(a.id);
+    setEditForm({ label: a.label, line1: a.line1, city: a.city, postal_code: a.postal_code || "" });
+  }
+  function cancelEdit() { setEditingId(null); }
+
+  async function saveEdit(id: string) {
+    if (!editForm.line1.trim()) { toast.error("Street address required"); return; }
+    if (editForm.line1.length > 200 || editForm.label.length > 50) { toast.error("Input too long"); return; }
+    const { error } = await supabase.from("addresses").update({
+      label: editForm.label.trim() || "Home",
+      line1: editForm.line1.trim(),
+      city: editForm.city.trim() || "Brooklyn",
+      postal_code: editForm.postal_code.trim() || null,
+    }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Address updated");
+    setEditingId(null);
+    refresh();
+  }
 
   async function add() {
     if (!user) return;
