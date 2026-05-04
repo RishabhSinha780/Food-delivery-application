@@ -49,6 +49,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => nav(dashboardLink)}>My Dashboard</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => nav("/orders")}>Order History</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => nav("/addresses")}>Address Book</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={async () => { await signOut(); nav("/"); }}>
                     <LogOut className="h-4 w-4 mr-2" /> Sign out
