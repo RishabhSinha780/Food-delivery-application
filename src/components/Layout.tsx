@@ -1,3 +1,4 @@
+import { Link, NavLink } from "react-router-dom";
 import { ShoppingBag, MapPin, User as UserIcon, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
