@@ -19,8 +19,9 @@ export async function acceptDelivery(deliveryId: string, partnerId: string) {
 }
 
 export async function updateDeliveryStatus(deliveryId: string, status: string, etaMinutes?: number) {
-  const patch: Record<string, unknown> = { status };
-  if (etaMinutes !== undefined) patch.eta_minutes = etaMinutes;
-  const { error } = await supabase.from("deliveries").update(patch).eq("id", deliveryId);
+  const { error } = await supabase
+    .from("deliveries")
+    .update({ status: status as never, ...(etaMinutes !== undefined ? { eta_minutes: etaMinutes } : {}) })
+    .eq("id", deliveryId);
   if (error) throw error;
 }
