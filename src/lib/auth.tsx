@@ -27,13 +27,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [mockRole, setMockRoleState] = useState<AppRole | null>(
-    localStorage.getItem("mock_role") as AppRole | null
+    import.meta.env.DEV ? (localStorage.getItem("mock_role") as AppRole | null) : null
   );
   const [mockUserId, setMockUserId] = useState<string | null>(
-    localStorage.getItem("mock_user_id")
+    import.meta.env.DEV ? localStorage.getItem("mock_user_id") : null
   );
 
   const setMockRole = async (role: AppRole | null) => {
+    if (!import.meta.env.DEV) return;
     if (role) {
       localStorage.setItem("mock_role", role);
       setMockRoleState(role);
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     const params = new URLSearchParams(window.location.search);
     const mockParam = params.get("mock") as AppRole | null;
     if (mockParam && ["customer", "owner", "delivery", "admin"].includes(mockParam)) {
@@ -77,6 +79,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       });
       localStorage.setItem("mock_cleared_v3", "true");
+    }
+
+    // Force clear all mock local storage data when running in production
+    if (!import.meta.env.DEV) {
+      const keysToClear: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (
+          key.startsWith("mock_") || 
+          key.startsWith("mock_orders_") || 
+          key.startsWith("mock_menu_") || 
+          key.startsWith("mock_customer_orders_") || 
+          key.startsWith("mock_order_items_") || 
+          key.startsWith("mock_delivery_")
+        )) {
+          keysToClear.push(key);
+        }
+      }
+      keysToClear.forEach(k => {
+        localStorage.removeItem(k);
+      });
     }
   }, []);
 

@@ -254,7 +254,7 @@ export default function OwnerDashboard() {
                         loadDetails();
                         return;
                       }
-                      await supabase.from("orders").update({ status: status as "accepted" }).eq("id", id);
+                      await supabase.from("orders").update({ status: status as any }).eq("id", id);
                       toast.success(`Order → ${status}`);
                       loadDetails();
                     }} />
@@ -399,7 +399,7 @@ function CreateRestaurant({ onCreated }: { onCreated: (id: string) => void }) {
   );
 }
 
-const NEXT: Record<string, string | null> = { pending: "accepted", accepted: "preparing", preparing: "ready", ready: "picked_up", picked_up: "on_the_way", on_the_way: "delivered", delivered: null };
+const NEXT: Record<string, string | null> = { pending: "accepted", accepted: "preparing", preparing: "ready", ready: null, picked_up: null, on_the_way: null, delivered: null };
 
 function OrdersList({ orders, orderItemsMap, onChange }: { orders: Order[]; orderItemsMap: Record<string, { name: string; qty: number; price: number }[]>; onChange: (id: string, status: string) => void }) {
   const { formatPrice } = useCurrency();

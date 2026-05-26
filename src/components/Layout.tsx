@@ -90,7 +90,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           <nav className="hidden md:flex items-center gap-1 text-sm">
             <NavLink to="/" end className={({ isActive }) => `px-3 py-2 rounded-full ${isActive ? "bg-foreground text-background" : "hover:bg-muted"}`}>Restaurants</NavLink>
-            {user && <NavLink to="/orders" className={({ isActive }) => `px-3 py-2 rounded-full ${isActive ? "bg-foreground text-background" : "hover:bg-muted"}`}>Orders</NavLink>}
+            {user && (
+              <>
+                <NavLink to="/favourites" className={({ isActive }) => `px-3 py-2 rounded-full ${isActive ? "bg-foreground text-background" : "hover:bg-muted"}`}>Favourites</NavLink>
+                <NavLink to="/orders" className={({ isActive }) => `px-3 py-2 rounded-full ${isActive ? "bg-foreground text-background" : "hover:bg-muted"}`}>Orders</NavLink>
+              </>
+            )}
           </nav>
 
           <div className="flex items-center gap-3">
@@ -136,6 +141,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <DropdownMenuLabel className="label-mono">{roles.join(" · ") || "customer"}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => nav(dashboardLink)}>My Dashboard</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => nav("/favourites")}>Favourites</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => nav("/orders")}>Order History</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => nav("/addresses")}>Address Book</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setProfileOpen(true)}>

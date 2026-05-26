@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import RestaurantDetail from "./pages/RestaurantDetail";
+import Favourites from "./pages/Favourites";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderTracking from "./pages/OrderTracking";
@@ -41,6 +42,7 @@ const App = () => (
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+                <Route path="/favourites" element={<RequireAuth><Favourites /></RequireAuth>} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
                 <Route path="/track/:id" element={<RequireAuth><OrderTracking /></RequireAuth>} />

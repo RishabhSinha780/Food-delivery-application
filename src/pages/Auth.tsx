@@ -12,16 +12,24 @@ import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
 import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
 import { evaluatePassword } from "@/lib/passwordStrength";
-import { z } from "zod";
+import { useAuth } from "@/lib/auth";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Please enter a valid email address").max(255),
+  password: z.string().min(1, "Password is required"),
+});
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 const signupSchema = z.object({
-  email: z.string().trim().email().max(255),
-  password: z.string().min(8).max(72),
-  display_name: z.string().trim().min(1).max(80),
+  email: z.string().trim().email("Please enter a valid email address").max(255),
+  password: z.string().min(8, "Password must be at least 8 characters").max(72),
+  display_name: z.string().trim().min(2, "Display name must be at least 2 characters").max(80),
   role: z.enum(["customer", "owner", "delivery"]),
 });
-
-
+type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function Auth() {
   const nav = useNavigate();
@@ -47,7 +55,6 @@ export default function Auth() {
 
         <Tabs value={activeTab} onValueChange={(val) => {
           setActiveTab(val);
-          // Clear the banner message if they manually switch tabs
           if (val === "signup") {
             setInfoMessage(null);
           }
@@ -68,19 +75,19 @@ export default function Auth() {
   );
 }
 
-import { useAuth } from "@/lib/auth";
-
 function SignInForm({ onDone, infoMessage }: { onDone: () => void; infoMessage: string | null }) {
   const { setMockRole } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" }
+  });
+
+  async function submit(data: LoginFormValues) {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
     setLoading(false);
     if (error) toast.error(error.message);
     else { toast.success("Signed in"); onDone(); }
@@ -96,17 +103,21 @@ function SignInForm({ onDone, infoMessage }: { onDone: () => void; infoMessage: 
 
   return (
     <div className="space-y-4">
-      <form onSubmit={submit} className="space-y-4 card-flat p-6">
+      <form onSubmit={handleSubmit(submit)} className="space-y-4 card-flat p-6">
         {infoMessage && (
           <div className="bg-primary-soft border border-primary text-accent-foreground p-4 rounded-xl text-sm font-medium animate-slide-in mb-2 leading-relaxed">
             {infoMessage}
           </div>
         )}
-        <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
         <div>
-          <Label>Password</Label>
+          <Label htmlFor="signin-email">Email</Label>
+          <Input id="signin-email" type="email" {...register("email")} />
+          {errors.email && <p className="text-xs text-red-500 font-semibold mt-1">{errors.email.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="signin-password">Password</Label>
           <div className="relative mt-1">
-            <Input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required className="pr-10" />
+            <Input id="signin-password" type={showPassword ? "text" : "password"} {...register("password")} className="pr-10" />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
@@ -115,83 +126,84 @@ function SignInForm({ onDone, infoMessage }: { onDone: () => void; infoMessage: 
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
+          {errors.password && <p className="text-xs text-red-500 font-semibold mt-1">{errors.password.message}</p>}
         </div>
-        <Button type="submit" disabled={loading} className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90">
+        <Button type="submit" disabled={loading} className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90 font-semibold">
           {loading ? "Signing in..." : "Sign in"}
         </Button>
         <Link to="/forgot-password" className="block text-center text-sm underline text-muted-foreground">
           Forgot password?
         </Link>
       </form>
-
-      <div className="card-flat p-6 border-dashed border-primary/40 bg-primary-soft/10">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 text-center">Fast Testing Bypass (No Verification Needed)</p>
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleDevBypass("customer")} className="rounded-full text-xs font-medium hover:bg-primary-soft">Login as Customer</Button>
-          <Button variant="outline" size="sm" onClick={() => handleDevBypass("owner")} className="rounded-full text-xs font-medium hover:bg-primary-soft">Login as Kitchen Owner</Button>
-          <Button variant="outline" size="sm" onClick={() => handleDevBypass("delivery")} className="rounded-full text-xs font-medium hover:bg-primary-soft">Login as Delivery Partner</Button>
-          <Button variant="outline" size="sm" onClick={() => handleDevBypass("admin")} className="rounded-full text-xs font-medium hover:bg-primary-soft">Login as Admin</Button>
+      {import.meta.env.DEV && (
+        <div className="card-flat p-6 border-dashed border-primary/40 bg-primary-soft/10 mt-6 animate-slide-in">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 text-center">Fast Testing Bypass (No Verification Needed)</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" size="sm" onClick={() => handleDevBypass("customer")} className="rounded-full text-xs font-medium hover:bg-primary-soft">Login as Customer</Button>
+            <Button variant="outline" size="sm" onClick={() => handleDevBypass("owner")} className="rounded-full text-xs font-medium hover:bg-primary-soft">Login as Kitchen Owner</Button>
+            <Button variant="outline" size="sm" onClick={() => handleDevBypass("delivery")} className="rounded-full text-xs font-medium hover:bg-primary-soft">Login as Delivery Partner</Button>
+            <Button variant="outline" size="sm" onClick={() => handleDevBypass("admin")} className="rounded-full text-xs font-medium hover:bg-primary-soft">Login as Admin</Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 function SignUpForm({ onDone }: { onDone: () => void }) {
-  const [form, setForm] = useState({ email: "", password: "", display_name: "", role: "customer" as const });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const parsed = signupSchema.safeParse(form);
-    if (!parsed.success) { toast.error(parsed.error.errors[0].message); return; }
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: { email: "", password: "", display_name: "", role: "customer" }
+  });
 
-    const strength = evaluatePassword(parsed.data.password);
+  const passwordVal = watch("password") || "";
+  const roleVal = watch("role");
+
+  async function submit(data: SignupFormValues) {
+    const strength = evaluatePassword(data.password);
     if (strength.score < 2) {
       toast.error("Please choose a stronger password");
       return;
     }
 
-    console.log("Supabase SignUp Request Payload:", {
-      email: parsed.data.email,
-      role: parsed.data.role,
-      display_name: parsed.data.display_name,
-    });
-
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: parsed.data.email,
-      password: parsed.data.password,
+    const { error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        data: { display_name: parsed.data.display_name, role: parsed.data.role },
+        data: { display_name: data.display_name, role: data.role },
       },
     });
     setLoading(false);
 
     if (error) {
-      console.error("Supabase SignUp Error details:", {
-        message: error.message,
-        status: error.status,
-        code: error.code,
-      });
       toast.error(error.message);
     } else {
-      console.log("Supabase SignUp Success response data:", data);
       toast.success("Account created successfully!");
       onDone();
     }
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4 card-flat p-6">
-      <div><Label>Display name</Label><Input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} required /></div>
-      <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></div>
+    <form onSubmit={handleSubmit(submit)} className="space-y-4 card-flat p-6">
       <div>
-        <Label>Password</Label>
+        <Label htmlFor="signup-name">Display name</Label>
+        <Input id="signup-name" {...register("display_name")} />
+        {errors.display_name && <p className="text-xs text-red-500 font-semibold mt-1">{errors.display_name.message}</p>}
+      </div>
+      <div>
+        <Label htmlFor="signup-email">Email</Label>
+        <Input id="signup-email" type="email" {...register("email")} />
+        {errors.email && <p className="text-xs text-red-500 font-semibold mt-1">{errors.email.message}</p>}
+      </div>
+      <div>
+        <Label htmlFor="signup-password">Password</Label>
         <div className="relative mt-1">
-          <Input type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={8} className="pr-10" />
+          <Input id="signup-password" type={showPassword ? "text" : "password"} {...register("password")} className="pr-10" />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
@@ -200,19 +212,21 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        <PasswordStrengthMeter password={form.password} />
+        {errors.password && <p className="text-xs text-red-500 font-semibold mt-1">{errors.password.message}</p>}
+        <PasswordStrengthMeter password={passwordVal} />
       </div>
       <div>
         <Label className="mb-2 block">I am a...</Label>
-        <RadioGroup value={form.role} onValueChange={(v) => setForm({ ...form, role: v as "customer" })} className="grid grid-cols-3 gap-2">
+        <RadioGroup value={roleVal} onValueChange={(v) => setValue("role", v as any)} className="grid grid-cols-3 gap-2">
           {(["customer", "owner", "delivery"] as const).map((r) => (
-            <label key={r} className={`cursor-pointer border rounded-xl p-3 text-center text-sm capitalize ${form.role === r ? "border-primary bg-primary-soft" : "border-border"}`}>
+            <label key={r} className={`cursor-pointer border rounded-xl p-3 text-center text-sm capitalize transition-all ${roleVal === r ? "border-primary bg-primary-soft text-primary font-semibold" : "border-border text-muted-foreground hover:bg-muted/30"}`}>
               <RadioGroupItem value={r} className="sr-only" />{r}
             </label>
           ))}
         </RadioGroup>
+        {errors.role && <p className="text-xs text-red-500 font-semibold mt-1">{errors.role.message}</p>}
       </div>
-      <Button type="submit" disabled={loading} className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90">
+      <Button type="submit" disabled={loading} className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90 font-semibold">
         {loading ? "Creating..." : "Create account"}
       </Button>
     </form>
