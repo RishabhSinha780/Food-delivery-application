@@ -35,6 +35,12 @@ export default function Index() {
   }, [user, roles, loading, navigate]);
 
   useEffect(() => {
+    const isMock = localStorage.getItem("mock_role") !== null || localStorage.getItem("mock_restaurants") !== null;
+    if (isMock) {
+      const data = JSON.parse(localStorage.getItem("mock_restaurants") || "[]");
+      setRestaurants(data);
+      return;
+    }
     supabase.from("restaurants").select("*").then(({ data }) => setRestaurants(data ?? []));
   }, []);
 

@@ -22,6 +22,19 @@ export default function RestaurantDetail() {
 
   useEffect(() => {
     if (!id) return;
+    const isMock = localStorage.getItem("mock_role") !== null || localStorage.getItem("mock_restaurants") !== null;
+    if (isMock) {
+      const mockRests = JSON.parse(localStorage.getItem("mock_restaurants") || "[]") as Restaurant[];
+      const rest = mockRests.find((item) => item.id === id);
+      setR(rest || null);
+      if (rest) {
+        const mockMenu = JSON.parse(localStorage.getItem(`mock_menu_${id}`) || "[]") as MenuItem[];
+        setItems(mockMenu);
+      }
+      setReviews([]);
+      return;
+    }
+
     supabase.from("restaurants").select("*").eq("id", id).single().then(({ data }) => setR(data as Restaurant));
     supabase.from("menu_items").select("*").eq("restaurant_id", id).then(({ data }) => setItems((data ?? []) as MenuItem[]));
     supabase.from("reviews").select("*").eq("restaurant_id", id).order("created_at", { ascending: false }).then(({ data }) => setReviews((data ?? []) as Review[]));

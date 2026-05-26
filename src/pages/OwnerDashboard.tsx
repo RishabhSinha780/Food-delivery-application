@@ -35,18 +35,7 @@ export default function OwnerDashboard() {
   const getMockRestaurants = (): Restaurant[] => {
     const data = localStorage.getItem("mock_restaurants");
     if (data) return JSON.parse(data);
-    const initial = [
-      {
-        id: "dominos-mock-id",
-        name: "Dominos",
-        cuisine: "Pizza",
-        description: "Legendary pizzas cooked in 30 minutes.",
-        image_url: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800",
-        price_for_two: 25,
-        delivery_minutes: 30,
-        owner_id: "e7c2a6c9-16c7-4538-b1c3-316e1a032616"
-      }
-    ];
+    const initial: Restaurant[] = [];
     localStorage.setItem("mock_restaurants", JSON.stringify(initial));
     return initial;
   };
@@ -54,28 +43,7 @@ export default function OwnerDashboard() {
   const getMockMenu = (restaurantId: string): MenuItem[] => {
     const data = localStorage.getItem(`mock_menu_${restaurantId}`);
     if (data) return JSON.parse(data);
-    const initial = [
-      {
-        id: "menu-1",
-        restaurant_id: restaurantId,
-        name: "Pepperoni Pizza",
-        description: "Double pepperoni, double cheese, classic crust.",
-        price: 14.99,
-        image_url: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=600",
-        category: "Pizza",
-        is_available: true
-      },
-      {
-        id: "menu-2",
-        restaurant_id: restaurantId,
-        name: "Garlic Breadsticks",
-        description: "Baked fresh with garlic butter and herbs.",
-        price: 5.99,
-        image_url: "https://images.unsplash.com/photo-1544982503-9f984c14501a?w=600",
-        category: "Sides",
-        is_available: true
-      }
-    ];
+    const initial: MenuItem[] = [];
     localStorage.setItem(`mock_menu_${restaurantId}`, JSON.stringify(initial));
     return initial;
   };
@@ -83,24 +51,7 @@ export default function OwnerDashboard() {
   const getMockOrders = (restaurantId: string): Order[] => {
     const data = localStorage.getItem(`mock_orders_${restaurantId}`);
     if (data) return JSON.parse(data);
-    const initial = [
-      {
-        id: "order-1",
-        status: "pending",
-        total: 20.98,
-        created_at: new Date().toISOString(),
-        address_line: "123 Main St",
-        customer_id: "customer-1"
-      },
-      {
-        id: "order-2",
-        status: "delivered",
-        total: 14.99,
-        created_at: new Date(Date.now() - 3600000).toISOString(),
-        address_line: "456 Oak Ave",
-        customer_id: "customer-2"
-      }
-    ];
+    const initial: Order[] = [];
     localStorage.setItem(`mock_orders_${restaurantId}`, JSON.stringify(initial));
     return initial;
   };
@@ -144,38 +95,11 @@ export default function OwnerDashboard() {
       const ordersData = getMockOrders(selected.id);
       setOrders(ordersData);
       
-      const statsMap: Record<string, number> = {};
-      statsMap["menu-1"] = 3;
-      statsMap["menu-2"] = 1;
-      setItemStats(statsMap);
-
-      // Seed mock order items if needed
-      const mockOrderItemsKey1 = "mock_order_items_order-1";
-      if (!localStorage.getItem(mockOrderItemsKey1)) {
-        localStorage.setItem(mockOrderItemsKey1, JSON.stringify([{ name: "Pepperoni Pizza", qty: 1, price: 14.99 }, { name: "Garlic Breadsticks", qty: 1, price: 5.99 }]));
-      }
-      const mockOrderItemsKey2 = "mock_order_items_order-2";
-      if (!localStorage.getItem(mockOrderItemsKey2)) {
-        localStorage.setItem(mockOrderItemsKey2, JSON.stringify([{ name: "Pepperoni Pizza", qty: 1, price: 14.99 }]));
-      }
-
-      const itemsMap: Record<string, { name: string; qty: number; price: number }[]> = {};
-      ordersData.forEach(o => {
-        const oItems = JSON.parse(localStorage.getItem(`mock_order_items_${o.id}`) || "[]");
-        itemsMap[o.id] = oItems;
-      });
-      setOrderItemsMap(itemsMap);
-
-      setCustomerProfiles({
-        "customer-1": { display_name: "Rishabh Sinha", phone: "9876543210" },
-        "customer-2": { display_name: "John Doe" }
-      });
-      setDeliveries([
-        { id: "del-1", order_id: "order-2", partner_id: "delivery-1", status: "delivered" }
-      ]);
-      setPartnerProfiles({
-        "delivery-1": { display_name: "Ravi Kumar" }
-      });
+      setItemStats({});
+      setOrderItemsMap({});
+      setCustomerProfiles({});
+      setDeliveries([]);
+      setPartnerProfiles({});
       return;
     }
 

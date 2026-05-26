@@ -54,6 +54,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (mockParam && ["customer", "owner", "delivery", "admin"].includes(mockParam)) {
       setMockRole(mockParam);
     }
+
+    // One-time cleanup migration to remove all old pre-seeded and user-added mock entries
+    if (!localStorage.getItem("mock_cleared_v3")) {
+      const keysToClear: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (
+          key.startsWith("mock_") || 
+          key.startsWith("mock_orders_") || 
+          key.startsWith("mock_menu_") || 
+          key.startsWith("mock_customer_orders_") || 
+          key.startsWith("mock_order_items_") || 
+          key.startsWith("mock_delivery_")
+        )) {
+          keysToClear.push(key);
+        }
+      }
+      keysToClear.forEach(k => {
+        if (k !== "mock_role" && k !== "mock_user_id") {
+          localStorage.removeItem(k);
+        }
+      });
+      localStorage.setItem("mock_cleared_v3", "true");
+    }
   }, []);
 
   useEffect(() => {
