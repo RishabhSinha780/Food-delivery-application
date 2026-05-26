@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
+import { useCurrency } from "@/lib/currency";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { CreditCard, Banknote, MapPin, Plus } from "lucide-react";
+import { CreditCard, Banknote, MapPin, Plus, ArrowLeft } from "lucide-react";
 import { useAddresses } from "./Addresses";
 
 export default function Checkout() {
   const { items, subtotal, restaurantId, clear } = useCart();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const nav = useNavigate();
   const { addresses, refresh } = useAddresses();
   const [selectedId, setSelectedId] = useState<string>("new");
@@ -50,6 +52,66 @@ export default function Checkout() {
 
     setLoading(true);
 
+    const isMock = localStorage.getItem("mock_role") !== null;
+    if (isMock) {
+      const newOrderId = `order-${Math.random().toString(36).substr(2, 9)}`;
+      
+      if (selectedId === "new" && address.save) {
+        const mockAddresses = JSON.parse(localStorage.getItem("mock_addresses") || "[]");
+        mockAddresses.push({
+          id: `address-${Math.random().toString(36).substr(2, 9)}`,
+          user_id: user.id,
+          label: address.label.trim() || "Home",
+          line1, city,
+          postal_code: address.postal_code.trim() || null,
+        });
+        localStorage.setItem("mock_addresses", JSON.stringify(mockAddresses));
+      }
+
+      const mockOrdersKey = `mock_orders_${restaurantId}`;
+      const mockOrders = JSON.parse(localStorage.getItem(mockOrdersKey) || "[]");
+      const newOrder = {
+        id: newOrderId,
+        customer_id: user.id,
+        restaurant_id: restaurantId!,
+        subtotal, delivery_fee: fee, total, payment_method: payment,
+        address_line: line1, city, notes: address.notes || null,
+        status: payment === "card" ? "accepted" : "pending",
+        created_at: new Date().toISOString()
+      };
+      mockOrders.unshift(newOrder);
+      localStorage.setItem(mockOrdersKey, JSON.stringify(mockOrders));
+
+      const customerOrdersKey = `mock_customer_orders_${user.id}`;
+      const customerOrders = JSON.parse(localStorage.getItem(customerOrdersKey) || "[]");
+      customerOrders.unshift(newOrder);
+      localStorage.setItem(customerOrdersKey, JSON.stringify(customerOrders));
+
+      const mockOrderItemsKey = `mock_order_items_${newOrderId}`;
+      const lineItems = items.map((i) => ({ order_id: newOrderId, menu_item_id: i.id, name: i.name, price: i.price, qty: i.qty }));
+      localStorage.setItem(mockOrderItemsKey, JSON.stringify(lineItems));
+
+      const mockDeliveryKey = `mock_delivery_${newOrderId}`;
+      localStorage.setItem(mockDeliveryKey, JSON.stringify({ order_id: newOrderId, eta_minutes: 30, status: payment === "card" ? "accepted" : "pending" }));
+
+      const mockAllDeliveries = JSON.parse(localStorage.getItem("mock_all_deliveries") || "[]");
+      mockAllDeliveries.push({
+        id: `del-${Math.random().toString(36).substr(2, 9)}`,
+        order_id: newOrderId,
+        eta_minutes: 30,
+        status: payment === "card" ? "accepted" : "pending",
+        partner_id: null,
+        created_at: new Date().toISOString()
+      });
+      localStorage.setItem("mock_all_deliveries", JSON.stringify(mockAllDeliveries));
+
+      setLoading(false);
+      clear();
+      toast.success(payment === "card" ? "Payment successful (mock)" : "Order placed");
+      nav(`/track/${newOrderId}`);
+      return;
+    }
+
     if (selectedId === "new" && address.save) {
       await supabase.from("addresses").insert({
         user_id: user.id,
@@ -80,7 +142,10 @@ export default function Checkout() {
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-6 py-12 animate-slide-in">
+        <Button variant="ghost" size="sm" className="mb-6 inline-flex items-center gap-1.5 pl-0 text-muted-foreground hover:text-foreground hover:bg-transparent" onClick={() => nav("/cart")}>
+          <ArrowLeft className="h-4 w-4" /> Back to Cart
+        </Button>
         <p className="label-mono mb-3">(checkout)</p>
         <h1 className="text-4xl font-extrabold tracking-tighter mb-8">Almost there.</h1>
 
@@ -150,15 +215,15 @@ export default function Checkout() {
           <div className="card-flat p-6 h-fit space-y-3 mono text-sm sticky top-24">
             <h3 className="font-bold text-base font-sans mb-2">Order summary</h3>
             {items.map((i) => (
-              <div key={i.id} className="flex justify-between"><span className="text-muted-foreground">{i.qty}× {i.name}</span><span>${(i.price * i.qty).toFixed(2)}</span></div>
+              <div key={i.id} className="flex justify-between"><span className="text-muted-foreground">{i.qty}× {i.name}</span><span>{formatPrice(i.price * i.qty)}</span></div>
             ))}
             <div className="border-t border-border pt-3 space-y-1">
-              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span>${fee.toFixed(2)}</span></div>
-              <div className="flex justify-between font-bold text-base font-sans pt-2 border-t border-border"><span>Total</span><span>${total.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span>{formatPrice(fee)}</span></div>
+              <div className="flex justify-between font-bold text-base font-sans pt-2 border-t border-border"><span>Total</span><span>{formatPrice(total)}</span></div>
             </div>
             <Button onClick={placeOrder} disabled={loading} className="w-full mt-3 h-12 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold">
-              {loading ? "Placing..." : `Place order · $${total.toFixed(2)}`}
+              {loading ? "Placing..." : `Place order · ${formatPrice(total)}`}
             </Button>
           </div>
         </div>

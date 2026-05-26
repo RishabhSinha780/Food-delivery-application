@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { Star, Clock, Plus } from "lucide-react";
+import { useParams, Link } from "react-router-dom";
+import { Star, Clock, Plus, ArrowLeft } from "lucide-react";
 import Layout from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart";
+import { useCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -17,6 +18,7 @@ export default function RestaurantDetail() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const { add } = useCart();
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     if (!id) return;
@@ -31,7 +33,10 @@ export default function RestaurantDetail() {
 
   return (
     <Layout>
-      <section className="max-w-7xl mx-auto px-6 pt-8">
+      <section className="max-w-7xl mx-auto px-6 pt-8 animate-slide-in">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Back to Kitchens
+        </Link>
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div className="bg-muted aspect-[4/3] rounded-2xl overflow-hidden">
             {r.image_url && <img src={r.image_url} alt={r.name} className="w-full h-full object-cover" />}
@@ -47,7 +52,7 @@ export default function RestaurantDetail() {
               <span className="bg-card border border-border px-3 py-2 rounded-full inline-flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" /> {r.delivery_minutes} min
               </span>
-              <span className="bg-card border border-border px-3 py-2 rounded-full">${Number(r.price_for_two)} for two</span>
+              <span className="bg-card border border-border px-3 py-2 rounded-full font-semibold">{formatPrice(r.price_for_two)} for two</span>
             </div>
           </div>
         </div>
@@ -68,7 +73,7 @@ export default function RestaurantDetail() {
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between gap-2">
                       <h4 className="font-bold">{m.name}</h4>
-                      <span className="mono text-sm">${Number(m.price)}</span>
+                      <span className="mono text-sm font-semibold">{formatPrice(m.price)}</span>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{m.description}</p>
                   </div>

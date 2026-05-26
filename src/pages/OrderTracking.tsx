@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Clock, Truck, Package, ChefHat, Bike, MapPin, Star } from "lucide-react";
+import { Check, Clock, Truck, Package, ChefHat, Bike, MapPin, Star, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth";
+import { useCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 
 type Order = { id: string; status: string; total: number; subtotal: number; delivery_fee: number; address_line: string; city: string; payment_method: string; restaurant_id: string; created_at: string };
@@ -31,10 +32,47 @@ export default function OrderTracking() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     if (!id) return;
+    const isMock = localStorage.getItem("mock_role") !== null;
+
     const load = async () => {
+      if (isMock) {
+        let foundOrder: Order | null = null;
+        if (user) {
+          const customerOrdersKey = `mock_customer_orders_${user.id}`;
+          const customerOrders = JSON.parse(localStorage.getItem(customerOrdersKey) || "[]") as Order[];
+          foundOrder = customerOrders.find(o => o.id === id) || null;
+        }
+        if (!foundOrder) {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith("mock_orders_")) {
+              const orders = JSON.parse(localStorage.getItem(key) || "[]") as Order[];
+              const found = orders.find(o => o.id === id);
+              if (found) { foundOrder = found; break; }
+            }
+          }
+        }
+        if (foundOrder) {
+          setOrder(foundOrder);
+          const mockRests = JSON.parse(localStorage.getItem("mock_restaurants") || "[]") as any[];
+          const rest = mockRests.find(r => r.id === foundOrder!.restaurant_id);
+          setRestName(rest ? rest.name : "Dominos");
+          
+          const mockOrderItemsKey = `mock_order_items_${id}`;
+          const itemsData = JSON.parse(localStorage.getItem(mockOrderItemsKey) || "[]");
+          setItems(itemsData);
+
+          const mockDeliveryKey = `mock_delivery_${id}`;
+          const deliveryData = JSON.parse(localStorage.getItem(mockDeliveryKey) || '{"eta_minutes": 30, "status": "pending", "partner_id": null}');
+          setDelivery(deliveryData);
+        }
+        return;
+      }
+
       const { data: o } = await supabase.from("orders").select("*").eq("id", id).single();
       setOrder(o as Order);
       if (o) {
@@ -46,14 +84,20 @@ export default function OrderTracking() {
       const { data: d } = await supabase.from("deliveries").select("*").eq("order_id", id).maybeSingle();
       setDelivery(d as Delivery | null);
     };
+
     load();
+
+    if (isMock) {
+      const interval = setInterval(load, 2000);
+      return () => clearInterval(interval);
+    }
 
     const ch = supabase.channel(`order-${id}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${id}` }, (p) => setOrder(p.new as Order))
       .on("postgres_changes", { event: "*", schema: "public", table: "deliveries", filter: `order_id=eq.${id}` }, (p) => setDelivery(p.new as Delivery))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [id]);
+  }, [id, user]);
 
   async function submitReview() {
     if (!order || !user) return;
@@ -71,7 +115,10 @@ export default function OrderTracking() {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-6 py-12 animate-slide-in">
+        <Link to="/orders" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Back to Orders
+        </Link>
         <p className="label-mono mb-3">(order #{order.id.slice(0, 8)})</p>
         <h1 className="text-4xl font-extrabold tracking-tighter mb-2">Tracking your meal.</h1>
         <p className="text-muted-foreground mb-8">From <b className="text-foreground">{restName}</b></p>
@@ -122,8 +169,8 @@ export default function OrderTracking() {
           <div className="card-flat p-6">
             <h3 className="font-bold mb-3">Items</h3>
             <div className="space-y-2 mono text-sm">
-              {items.map((i, idx) => <div key={idx} className="flex justify-between"><span className="text-muted-foreground">{i.qty}× {i.name}</span><span>${(i.price * i.qty).toFixed(2)}</span></div>)}
-              <div className="flex justify-between font-bold text-base font-sans pt-2 border-t border-border"><span>Total</span><span>${Number(order.total).toFixed(2)}</span></div>
+              {items.map((i, idx) => <div key={idx} className="flex justify-between"><span className="text-muted-foreground">{i.qty}× {i.name}</span><span>{formatPrice(i.price * i.qty)}</span></div>)}
+              <div className="flex justify-between font-bold text-base font-sans pt-2 border-t border-border"><span>Total</span><span>{formatPrice(order.total)}</span></div>
             </div>
           </div>
           <div className="card-flat p-6">

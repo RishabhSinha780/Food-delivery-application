@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { MapPin, Plus, Trash2, Pencil, X, Check } from "lucide-react";
-import { useBlocker } from "react-router-dom";
+import { MapPin, Plus, Trash2, Pencil, X, Check, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export type Address = {
   id: string;
@@ -27,6 +27,13 @@ export function useAddresses() {
   async function refresh() {
     if (!user) { setAddresses([]); return; }
     setLoading(true);
+    const isMock = localStorage.getItem("mock_role") !== null;
+    if (isMock) {
+      const data = JSON.parse(localStorage.getItem("mock_addresses") || "[]");
+      setAddresses(data.filter((a: any) => a.user_id === user.id));
+      setLoading(false);
+      return;
+    }
     const { data } = await supabase.from("addresses").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
     setAddresses((data || []) as Address[]);
     setLoading(false);
@@ -38,6 +45,7 @@ export function useAddresses() {
 export default function Addresses() {
   const { user } = useAuth();
   const { addresses, refresh } = useAddresses();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ label: "Home", line1: "", city: "Brooklyn", postal_code: "" });
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -52,9 +60,6 @@ export default function Addresses() {
     editForm.city !== editOriginal.city ||
     editForm.postal_code !== editOriginal.postal_code
   );
-
-  // Block in-app navigation when there are unsaved changes
-  const blocker = useBlocker(isDirty);
 
   // Warn on browser tab close / refresh / external nav
   useEffect(() => {
@@ -82,6 +87,26 @@ export default function Addresses() {
   async function saveEdit(id: string) {
     if (!editForm.line1.trim()) { toast.error("Street address required"); return; }
     if (editForm.line1.length > 200 || editForm.label.length > 50) { toast.error("Input too long"); return; }
+    const isMock = localStorage.getItem("mock_role") !== null;
+    if (isMock) {
+      const data = JSON.parse(localStorage.getItem("mock_addresses") || "[]") as Address[];
+      const idx = data.findIndex((a) => a.id === id);
+      if (idx !== -1) {
+        data[idx] = {
+          ...data[idx],
+          label: editForm.label.trim() || "Home",
+          line1: editForm.line1.trim(),
+          city: editForm.city.trim() || "Brooklyn",
+          postal_code: editForm.postal_code.trim() || null,
+        };
+        localStorage.setItem("mock_addresses", JSON.stringify(data));
+      }
+      toast.success("Address updated");
+      setEditingId(null);
+      refresh();
+      return;
+    }
+
     const { error } = await supabase.from("addresses").update({
       label: editForm.label.trim() || "Home",
       line1: editForm.line1.trim(),
@@ -99,6 +124,25 @@ export default function Addresses() {
     if (!form.line1.trim()) { toast.error("Street address required"); return; }
     if (form.line1.length > 200 || form.label.length > 50) { toast.error("Input too long"); return; }
     setSaving(true);
+    const isMock = localStorage.getItem("mock_role") !== null;
+    if (isMock) {
+      const data = JSON.parse(localStorage.getItem("mock_addresses") || "[]") as Address[];
+      data.push({
+        id: `address-${Math.random().toString(36).substr(2, 9)}`,
+        user_id: user.id,
+        label: form.label.trim() || "Home",
+        line1: form.line1.trim(),
+        city: form.city.trim() || "Brooklyn",
+        postal_code: form.postal_code.trim() || null,
+      });
+      localStorage.setItem("mock_addresses", JSON.stringify(data));
+      setSaving(false);
+      setForm({ label: "Home", line1: "", city: "Brooklyn", postal_code: "" });
+      toast.success("Address saved");
+      refresh();
+      return;
+    }
+
     const { error } = await supabase.from("addresses").insert({
       user_id: user.id,
       label: form.label.trim() || "Home",
@@ -114,14 +158,28 @@ export default function Addresses() {
   }
 
   async function remove(id: string) {
+    const isMock = localStorage.getItem("mock_role") !== null;
+    if (isMock) {
+      const data = JSON.parse(localStorage.getItem("mock_addresses") || "[]") as Address[];
+      const filtered = data.filter((a) => a.id !== id);
+      localStorage.setItem("mock_addresses", JSON.stringify(filtered));
+      toast.success("Address deleted");
+      refresh();
+      return;
+    }
+
     const { error } = await supabase.from("addresses").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
+    toast.success("Address deleted");
     refresh();
   }
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-6 py-12 animate-slide-in">
+        <Button variant="ghost" size="sm" className="mb-6 inline-flex items-center gap-1 pl-0 text-muted-foreground hover:text-foreground hover:bg-transparent" onClick={() => navigate("/")}>
+          <ArrowLeft className="h-4 w-4" /> Back to Home
+        </Button>
         <p className="label-mono mb-3">(address book)</p>
         <h1 className="text-4xl font-extrabold tracking-tighter mb-8">Your saved addresses.</h1>
 
@@ -193,19 +251,6 @@ export default function Addresses() {
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction onClick={discardEdit}>Discard</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={blocker.state === "blocked"} onOpenChange={(open) => { if (!open) blocker.reset?.(); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Leave with unsaved changes?</AlertDialogTitle>
-            <AlertDialogDescription>You have unsaved edits to an address. Leave without saving?</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => blocker.reset?.()}>Stay on page</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setEditingId(null); blocker.proceed?.(); }}>Leave</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

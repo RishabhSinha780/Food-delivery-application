@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, ShoppingBag, DollarSign, Store } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { useCurrency } from "@/lib/currency";
 
 type Order = { id: string; status: string; total: number; created_at: string };
 type Restaurant = { id: string; name: string; cuisine: string; rating: number };
 type Profile = { id: string; display_name: string | null };
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -26,11 +30,17 @@ export default function AdminDashboard() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-6 py-12">
+        {user && (
+          <div className="mb-6 bg-primary-soft border border-primary/20 text-foreground px-4 py-3 rounded-2xl inline-flex items-center gap-2 text-sm font-medium animate-slide-in">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shrink-0" />
+            Welcome, Admin {user.user_metadata?.display_name || user.email?.split("@")[0]}!
+          </div>
+        )}
         <p className="label-mono mb-3">(admin)</p>
         <h1 className="text-4xl font-extrabold tracking-tighter mb-8">Operations.</h1>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-          <Stat icon={<DollarSign className="h-4 w-4" />} label="Revenue" value={`$${revenue.toFixed(2)}`} />
+          <Stat icon={<DollarSign className="h-4 w-4" />} label="Revenue" value={formatPrice(revenue)} />
           <Stat icon={<ShoppingBag className="h-4 w-4" />} label="Orders" value={String(orders.length)} />
           <Stat icon={<Store className="h-4 w-4" />} label="Restaurants" value={String(restaurants.length)} />
           <Stat icon={<Users className="h-4 w-4" />} label="Users" value={String(usersCount)} />
@@ -40,10 +50,10 @@ export default function AdminDashboard() {
           <Section title="Recent orders">
             <div className="space-y-2">
               {orders.slice(0, 10).map((o) => (
-                <div key={o.id} className="flex justify-between items-center text-sm py-2 border-b border-border last:border-0">
+                <div key={o.id} className="grid grid-cols-[1fr_1.5fr_1fr] items-center text-sm py-2 border-b border-border last:border-0">
                   <span className="mono text-xs">#{o.id.slice(0, 8)}</span>
-                  <span className="mono text-xs uppercase text-primary">{o.status.replace(/_/g, " ")}</span>
-                  <span className="mono">${Number(o.total).toFixed(2)}</span>
+                  <span className="mono text-xs uppercase text-primary text-center truncate">{o.status.replace(/_/g, " ")}</span>
+                  <span className="mono font-semibold text-right">{formatPrice(o.total)}</span>
                 </div>
               ))}
             </div>
@@ -52,10 +62,10 @@ export default function AdminDashboard() {
           <Section title="Restaurants">
             <div className="space-y-2">
               {restaurants.map((r) => (
-                <div key={r.id} className="flex justify-between items-center text-sm py-2 border-b border-border last:border-0">
-                  <span className="font-semibold">{r.name}</span>
-                  <span className="text-xs text-muted-foreground">{r.cuisine}</span>
-                  <span className="mono text-xs">★ {Number(r.rating).toFixed(1)}</span>
+                <div key={r.id} className="grid grid-cols-[2fr_1.5fr_1fr] items-center text-sm py-2 border-b border-border last:border-0">
+                  <span className="font-semibold truncate">{r.name}</span>
+                  <span className="text-xs text-muted-foreground text-center truncate">{r.cuisine}</span>
+                  <span className="mono text-xs text-right">★ {Number(r.rating).toFixed(1)}</span>
                 </div>
               ))}
             </div>

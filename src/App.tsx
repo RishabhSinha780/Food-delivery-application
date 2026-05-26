@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
+import { CurrencyProvider } from "@/lib/currency";
 import RequireAuth from "@/components/RequireAuth";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
@@ -31,26 +32,28 @@ const App = () => (
     <Sonner />
     <BrowserRouter>
       <AuthProvider>
-        <CartProvider>
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/restaurant/:id" element={<RestaurantDetail />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
-              <Route path="/track/:id" element={<RequireAuth><OrderTracking /></RequireAuth>} />
-              <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
-              <Route path="/addresses" element={<RequireAuth><Addresses /></RequireAuth>} />
-              <Route path="/owner" element={<RequireAuth role="owner"><OwnerDashboard /></RequireAuth>} />
-              <Route path="/delivery" element={<RequireAuth role="delivery"><DeliveryDashboard /></RequireAuth>} />
-              <Route path="/admin" element={<RequireAuth role="admin"><AdminDashboard /></RequireAuth>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ErrorBoundary>
-        </CartProvider>
+        <CurrencyProvider>
+          <CartProvider>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
+                <Route path="/track/:id" element={<RequireAuth><OrderTracking /></RequireAuth>} />
+                <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
+                <Route path="/addresses" element={<RequireAuth><Addresses /></RequireAuth>} />
+                <Route path="/owner" element={<RequireAuth role="owner"><OwnerDashboard /></RequireAuth>} />
+                <Route path="/delivery" element={<RequireAuth role="delivery"><DeliveryDashboard /></RequireAuth>} />
+                <Route path="/admin" element={<RequireAuth role="admin"><AdminDashboard /></RequireAuth>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
+          </CartProvider>
+        </CurrencyProvider>
       </AuthProvider>
     </BrowserRouter>
   </TooltipProvider>

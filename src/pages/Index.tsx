@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, Star, Clock, Filter } from "lucide-react";
 import Layout from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/lib/auth";
+import { useCurrency } from "@/lib/currency";
 
 type Restaurant = {
   id: string; name: string; description: string | null; cuisine: string;
@@ -12,10 +14,25 @@ type Restaurant = {
 };
 
 export default function Index() {
+  const { user, roles, loading } = useAuth();
+  const { formatPrice } = useCurrency();
+  const navigate = useNavigate();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [q, setQ] = useState("");
   const [cuisine, setCuisine] = useState<string | null>(null);
   const [sort, setSort] = useState<"rating" | "price-asc" | "price-desc">("rating");
+
+  useEffect(() => {
+    if (!loading && user) {
+      if (roles.includes("admin")) {
+        navigate("/admin", { replace: true });
+      } else if (roles.includes("owner")) {
+        navigate("/owner", { replace: true });
+      } else if (roles.includes("delivery")) {
+        navigate("/delivery", { replace: true });
+      }
+    }
+  }, [user, roles, loading, navigate]);
 
   useEffect(() => {
     supabase.from("restaurants").select("*").then(({ data }) => setRestaurants(data ?? []));
@@ -36,6 +53,12 @@ export default function Index() {
   return (
     <Layout>
       <section className="max-w-7xl mx-auto px-6 pt-16 pb-12 animate-slide-in">
+        {user && (
+          <div className="mb-6 bg-primary-soft border border-primary/20 text-foreground px-4 py-3 rounded-2xl inline-flex items-center gap-2 text-sm font-medium animate-slide-in">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shrink-0" />
+            Welcome, {user.user_metadata?.display_name || user.email?.split("@")[0]}!
+          </div>
+        )}
         <p className="label-mono mb-4">(a) the city is hungry</p>
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-[0.95] text-balance">
           Crave the city,<br />delivered uncompromised.
@@ -89,7 +112,7 @@ export default function Index() {
                 <p className="text-sm text-muted-foreground mb-3 line-clamp-1">{r.cuisine} · {r.description}</p>
                 <div className="flex justify-between items-center mono text-xs text-muted-foreground border-t border-border pt-3">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {r.delivery_minutes} min</span>
-                  <span>${Number(r.price_for_two)} for two</span>
+                  <span>{formatPrice(r.price_for_two)} for two</span>
                 </div>
               </div>
             </Link>
