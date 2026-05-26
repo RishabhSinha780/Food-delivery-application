@@ -7,15 +7,18 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Bike, MapPin, Package } from "lucide-react";
 
+import type { Database } from "@/integrations/supabase/types";
+
 type Delivery = { id: string; order_id: string; partner_id: string | null; status: string; eta_minutes: number | null };
 type Order = { id: string; address_line: string; city: string; total: number; restaurant_id: string; status: string };
 type RestaurantSummary = { id: string; name: string; cuisine: string };
+type DeliveryRelationship = Database["public"]["Tables"]["delivery_relationships"]["Row"];
 
 export default function DeliveryDashboard() {
   const { user } = useAuth();
   const { formatPrice } = useCurrency();
   
-  const [relationship, setRelationship] = useState<any | null>(null);
+  const [relationship, setRelationship] = useState<DeliveryRelationship | null>(null);
   const [allRestaurants, setAllRestaurants] = useState<RestaurantSummary[]>([]);
   const [selectedRestId, setSelectedRestId] = useState<string>("");
   const [loadingRel, setLoadingRel] = useState<boolean>(true);
@@ -447,7 +450,7 @@ export default function DeliveryDashboard() {
         <div className="space-y-3">
           {available.length === 0 && <div className="card-flat p-8 text-center text-muted-foreground">Nothing available right now.</div>}
           {available.map((d) => (
-            <div key={d.id} className="card-flat p-5 flex justify-between items-center">
+            <div key={d.id} className="card-flat p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <div className="font-bold flex items-center gap-2"><Package className="h-4 w-4" /> {d.restaurant_name}</div>
                 <div className="text-sm text-muted-foreground mt-1">→ {d.order.address_line}, {d.order.city}</div>

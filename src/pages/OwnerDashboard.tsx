@@ -14,9 +14,13 @@ import { toast } from "sonner";
 import { Plus, Trash2, Edit, DollarSign, ShoppingBag, History, ArrowLeft } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 
+import type { Database } from "@/integrations/supabase/types";
+
 type Restaurant = { id: string; name: string; cuisine: string; description: string | null; image_url: string | null; price_for_two: number; delivery_minutes: number };
 type MenuItem = { id: string; restaurant_id: string; name: string; description: string | null; price: number; image_url: string | null; category: string | null; is_available: boolean };
 type Order = { id: string; status: string; total: number; created_at: string; address_line: string; customer_id: string };
+type DeliveryRelationship = Database["public"]["Tables"]["delivery_relationships"]["Row"];
+type DeliveryRow = Database["public"]["Tables"]["deliveries"]["Row"];
 
 export default function OwnerDashboard() {
   const { user } = useAuth();
@@ -28,10 +32,10 @@ export default function OwnerDashboard() {
   const [itemStats, setItemStats] = useState<Record<string, number>>({});
   const [orderItemsMap, setOrderItemsMap] = useState<Record<string, { name: string; qty: number; price: number }[]>>({});
   const [customerProfiles, setCustomerProfiles] = useState<Record<string, { display_name: string; phone?: string }>>({});
-  const [deliveries, setDeliveries] = useState<any[]>([]);
+  const [deliveries, setDeliveries] = useState<DeliveryRow[]>([]);
   const [partnerProfiles, setPartnerProfiles] = useState<Record<string, { display_name: string }>>({});
   const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
-  const [deliveryRels, setDeliveryRels] = useState<any[]>([]);
+  const [deliveryRels, setDeliveryRels] = useState<DeliveryRelationship[]>([]);
   const [deliveryProfiles, setDeliveryProfiles] = useState<Record<string, { display_name: string; email?: string }>>({});
 
   const getMockRestaurants = (): Restaurant[] => {
@@ -102,6 +106,20 @@ export default function OwnerDashboard() {
       setCustomerProfiles({});
       setDeliveries([]);
       setPartnerProfiles({});
+
+      // Load mock delivery relationships for this restaurant
+      const mockRels = JSON.parse(localStorage.getItem("mock_delivery_relationships") || "[]");
+      const relsFiltered = mockRels.filter((r: any) => r.restaurant_id === selected.id);
+      setDeliveryRels(relsFiltered);
+
+      const dMap: Record<string, { display_name: string; email?: string }> = {};
+      relsFiltered.forEach((r: any) => {
+        dMap[r.delivery_id] = { 
+          display_name: r.delivery_name || "Delivery Partner",
+          email: `${r.delivery_name || 'delivery'}@example.com`
+        };
+      });
+      setDeliveryProfiles(dMap);
       return;
     }
 
@@ -270,7 +288,7 @@ export default function OwnerDashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                   <Stat label="Revenue (delivered)" value={formatPrice(revenue)} icon={<DollarSign className="h-4 w-4" />} />
                   <Stat label="Total orders" value={String(orders.length)} icon={<ShoppingBag className="h-4 w-4" />} />
                   <Stat label="Open orders" value={String(pending)} />

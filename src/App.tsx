@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
 import { CurrencyProvider } from "@/lib/currency";
+import { useEffect, lazy, Suspense } from "react";
 import RequireAuth from "@/components/RequireAuth";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
@@ -19,11 +20,20 @@ import Checkout from "./pages/Checkout";
 import OrderTracking from "./pages/OrderTracking";
 import Orders from "./pages/Orders";
 import Addresses from "./pages/Addresses";
-import OwnerDashboard from "./pages/OwnerDashboard";
-import DeliveryDashboard from "./pages/DeliveryDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
+
+// Lazy-load dashboards to optimize chunk size and initial page load times
+const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
+const DeliveryDashboard = lazy(() => import("./pages/DeliveryDashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+
 import NotFound from "./pages/NotFound";
-import { useEffect } from "react";
+
+const DashboardLoader = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-3">
+    <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    <p className="label-mono text-[10px] text-muted-foreground tracking-widest uppercase">Loading Dashboard</p>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -77,9 +87,9 @@ const App = () => (
                 <Route path="/track/:id" element={<RequireAuth><OrderTracking /></RequireAuth>} />
                 <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
                 <Route path="/addresses" element={<RequireAuth><Addresses /></RequireAuth>} />
-                <Route path="/owner" element={<RequireAuth role="owner"><OwnerDashboard /></RequireAuth>} />
-                <Route path="/delivery" element={<RequireAuth role="delivery"><DeliveryDashboard /></RequireAuth>} />
-                <Route path="/admin" element={<RequireAuth role="admin"><AdminDashboard /></RequireAuth>} />
+                <Route path="/owner" element={<RequireAuth role="owner"><Suspense fallback={<DashboardLoader />}><OwnerDashboard /></Suspense></RequireAuth>} />
+                <Route path="/delivery" element={<RequireAuth role="delivery"><Suspense fallback={<DashboardLoader />}><DeliveryDashboard /></Suspense></RequireAuth>} />
+                <Route path="/admin" element={<RequireAuth role="admin"><Suspense fallback={<DashboardLoader />}><AdminDashboard /></Suspense></RequireAuth>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </ErrorBoundary>
