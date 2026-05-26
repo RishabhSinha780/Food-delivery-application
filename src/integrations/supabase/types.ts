@@ -94,6 +94,45 @@ export type Database = {
           },
         ]
       }
+      delivery_relationships: {
+        Row: {
+          created_at: string
+          delivery_id: string
+          id: string
+          restaurant_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_id: string
+          id?: string
+          restaurant_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_id?: string
+          id?: string
+          restaurant_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_relationships_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_relationships_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       favourites: {
         Row: {
           created_at: string

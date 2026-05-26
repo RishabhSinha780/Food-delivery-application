@@ -31,6 +31,8 @@ export default function OwnerDashboard() {
   const [deliveries, setDeliveries] = useState<any[]>([]);
   const [partnerProfiles, setPartnerProfiles] = useState<Record<string, { display_name: string }>>({});
   const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
+  const [deliveryRels, setDeliveryRels] = useState<any[]>([]);
+  const [deliveryProfiles, setDeliveryProfiles] = useState<Record<string, { display_name: string; email?: string }>>({});
 
   const getMockRestaurants = (): Restaurant[] => {
     const data = localStorage.getItem("mock_restaurants");
@@ -158,6 +160,22 @@ export default function OwnerDashboard() {
         setDeliveries([]);
         setPartnerProfiles({});
       }
+
+      // Fetch delivery staff relationships
+      const { data: rels } = await supabase.from("delivery_relationships").select("*").eq("restaurant_id", selected.id);
+      const rList = rels ?? [];
+      setDeliveryRels(rList);
+      if (rList.length > 0) {
+        const dIds = rList.map(r => r.delivery_id);
+        const { data: dProfiles } = await supabase.from("profiles").select("id, display_name").in("id", dIds);
+        const dMap: Record<string, { display_name: string }> = {};
+        dProfiles?.forEach(p => {
+          dMap[p.id] = { display_name: p.display_name || "Delivery Partner" };
+        });
+        setDeliveryProfiles(dMap);
+      } else {
+        setDeliveryProfiles({});
+      }
     } catch (e) {
       console.error(e);
     }
@@ -177,6 +195,33 @@ export default function OwnerDashboard() {
       }).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [selected]);
+
+  const handleRelationshipStatus = async (relId: string, status: "approved" | "rejected") => {
+    const isMock = localStorage.getItem("mock_role") !== null;
+    if (isMock) {
+      const mockRels = JSON.parse(localStorage.getItem("mock_delivery_relationships") || "[]");
+      const idx = mockRels.findIndex((r: any) => r.id === relId);
+      if (idx !== -1) {
+        mockRels[idx].status = status;
+        localStorage.setItem("mock_delivery_relationships", JSON.stringify(mockRels));
+        toast.success(`Request ${status}`);
+        loadDetails();
+      }
+      return;
+    }
+
+    const { error } = await supabase
+      .from("delivery_relationships")
+      .update({ status })
+      .eq("id", relId);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(`Request ${status}`);
+      loadDetails();
+    }
+  };
 
   const revenue = orders.filter((o) => o.status === "delivered").reduce((s, o) => s + Number(o.total), 0);
   const pending = orders.filter((o) => ["pending", "accepted", "preparing", "ready"].includes(o.status)).length;
@@ -236,6 +281,7 @@ export default function OwnerDashboard() {
                     <TabsTrigger value="orders" className="rounded-full">Orders</TabsTrigger>
                     <TabsTrigger value="menu" className="rounded-full">Menu</TabsTrigger>
                     <TabsTrigger value="history" className="rounded-full">History</TabsTrigger>
+                    <TabsTrigger value="deliveries" className="rounded-full">Delivery Staff</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="orders">
@@ -266,6 +312,66 @@ export default function OwnerDashboard() {
 
                   <TabsContent value="history">
                     <HistoryTab orders={orders} deliveries={deliveries} customerProfiles={customerProfiles} partnerProfiles={partnerProfiles} formatPrice={formatPrice} />
+                  </TabsContent>
+
+                  <TabsContent value="deliveries">
+                    <div className="card-flat p-6 space-y-4">
+                      <h3 className="text-xl font-bold tracking-tight">Delivery Staff Requests</h3>
+                      <p className="text-sm text-muted-foreground">Manage delivery partners who want to deliver for your kitchen.</p>
+                      
+                      {deliveryRels.length === 0 && (
+                        <div className="text-center py-6 text-muted-foreground font-mono text-sm">
+                          No delivery requests found.
+                        </div>
+                      )}
+                      
+                      <div className="space-y-3">
+                        {deliveryRels.map((rel) => (
+                          <div key={rel.id} className="flex items-center justify-between p-4 border border-border rounded-xl bg-muted/10">
+                            <div>
+                              <div className="font-semibold text-foreground">
+                                {deliveryProfiles[rel.delivery_id]?.display_name || "Delivery Partner"}
+                              </div>
+                              <div className="text-xs text-muted-foreground font-mono mt-0.5">
+                                ID: {rel.delivery_id.slice(0, 8)}
+                              </div>
+                              <div className="mt-1">
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                  rel.status === "approved" ? "bg-green-500/10 text-green-500" :
+                                  rel.status === "rejected" ? "bg-destructive/10 text-destructive" :
+                                  "bg-yellow-500/10 text-yellow-500"
+                                }`}>
+                                  {rel.status}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              {rel.status === "pending" && (
+                                <>
+                                  <Button size="sm" onClick={() => handleRelationshipStatus(rel.id, "approved")} className="bg-foreground text-background hover:bg-foreground/90 rounded-full">
+                                    Approve
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleRelationshipStatus(rel.id, "rejected")} className="rounded-full">
+                                    Reject
+                                  </Button>
+                                </>
+                              )}
+                              {rel.status === "approved" && (
+                                <Button size="sm" variant="outline" onClick={() => handleRelationshipStatus(rel.id, "rejected")} className="rounded-full text-destructive hover:bg-destructive/10">
+                                  Revoke
+                                </Button>
+                              )}
+                              {rel.status === "rejected" && (
+                                <Button size="sm" variant="outline" onClick={() => handleRelationshipStatus(rel.id, "approved")} className="rounded-full">
+                                  Re-Approve
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </TabsContent>
                 </Tabs>
               </>

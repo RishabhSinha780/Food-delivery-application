@@ -43,7 +43,7 @@ export default function Auth() {
   }, []);
 
   const handleSignupSuccess = () => {
-    setInfoMessage("Account created successfully! We've sent a verification link to your email. Please check your inbox and confirm your email, then sign in below.");
+    setInfoMessage("Account created successfully! Please sign in with your email and password below.");
     setActiveTab("signin");
   };
 
@@ -170,7 +170,7 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
@@ -180,8 +180,8 @@ function SignUpForm({ onDone }: { onDone: () => void }) {
     });
     setLoading(false);
 
-    if (error) {
-      toast.error(error.message);
+    if (signUpError) {
+      toast.error(signUpError.message);
     } else {
       toast.success("Account created successfully!");
       onDone();

@@ -92,7 +92,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <NavLink to="/" end className={({ isActive }) => `px-3 py-2 rounded-full ${isActive ? "bg-foreground text-background" : "hover:bg-muted"}`}>Restaurants</NavLink>
             {user && (
               <>
-                <NavLink to="/favourites" className={({ isActive }) => `px-3 py-2 rounded-full ${isActive ? "bg-foreground text-background" : "hover:bg-muted"}`}>Favourites</NavLink>
+                {!roles.includes("owner") && (
+                  <NavLink to="/favourites" className={({ isActive }) => `px-3 py-2 rounded-full ${isActive ? "bg-foreground text-background" : "hover:bg-muted"}`}>Favourites</NavLink>
+                )}
                 <NavLink to="/orders" className={({ isActive }) => `px-3 py-2 rounded-full ${isActive ? "bg-foreground text-background" : "hover:bg-muted"}`}>Orders</NavLink>
               </>
             )}
@@ -141,9 +143,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <DropdownMenuLabel className="label-mono">{roles.join(" · ") || "customer"}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => nav(dashboardLink)}>My Dashboard</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => nav("/favourites")}>Favourites</DropdownMenuItem>
+                    {!roles.includes("owner") && (
+                      <>
+                        <DropdownMenuItem onClick={() => nav("/favourites")}>Favourites</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => nav("/addresses")}>Address Book</DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuItem onClick={() => nav("/orders")}>Order History</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => nav("/addresses")}>Address Book</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setProfileOpen(true)}>
                       <Settings className="h-4 w-4 mr-2" /> Profile Settings
                     </DropdownMenuItem>

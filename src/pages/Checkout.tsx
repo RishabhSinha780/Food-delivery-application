@@ -117,6 +117,25 @@ export default function Checkout() {
     setLoading(true);
 
     const isMock = localStorage.getItem("mock_role") !== null;
+    let eta = 35;
+
+    if (isMock) {
+      const mockRests = JSON.parse(localStorage.getItem("mock_restaurants") || "[]");
+      const r = mockRests.find((item: any) => item.id === restaurantId);
+      if (r && r.delivery_minutes) eta = Number(r.delivery_minutes);
+    } else {
+      try {
+        const { data: restData } = await supabase
+          .from("restaurants")
+          .select("delivery_minutes")
+          .eq("id", restaurantId!)
+          .single();
+        if (restData?.delivery_minutes) eta = Number(restData.delivery_minutes);
+      } catch (err) {
+        console.error("Error fetching restaurant delivery minutes:", err);
+      }
+    }
+
     if (isMock) {
       const newOrderId = `order-${Math.random().toString(36).substr(2, 9)}`;
       
@@ -156,13 +175,13 @@ export default function Checkout() {
       localStorage.setItem(mockOrderItemsKey, JSON.stringify(lineItems));
 
       const mockDeliveryKey = `mock_delivery_${newOrderId}`;
-      localStorage.setItem(mockDeliveryKey, JSON.stringify({ order_id: newOrderId, eta_minutes: 30, status: data.payment === "card" ? "accepted" : "pending" }));
+      localStorage.setItem(mockDeliveryKey, JSON.stringify({ order_id: newOrderId, eta_minutes: eta, status: data.payment === "card" ? "accepted" : "pending" }));
 
       const mockAllDeliveries = JSON.parse(localStorage.getItem("mock_all_deliveries") || "[]");
       mockAllDeliveries.push({
         id: `del-${Math.random().toString(36).substr(2, 9)}`,
         order_id: newOrderId,
-        eta_minutes: 30,
+        eta_minutes: eta,
         status: data.payment === "card" ? "accepted" : "pending",
         partner_id: null,
         created_at: new Date().toISOString()
@@ -197,7 +216,7 @@ export default function Checkout() {
 
       const lineItems = items.map((i) => ({ order_id: order.id, menu_item_id: i.id, name: i.name, price: i.price, qty: i.qty }));
       await supabase.from("order_items").insert(lineItems);
-      await supabase.from("deliveries").insert({ order_id: order.id, eta_minutes: 30 });
+      await supabase.from("deliveries").insert({ order_id: order.id, eta_minutes: eta });
 
       setLoading(false);
       clear();
