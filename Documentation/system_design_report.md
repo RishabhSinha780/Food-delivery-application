@@ -160,3 +160,69 @@ erDiagram
     restaurants ||--o{ reviews : "reviewed_in"
     orders ||--o| reviews : "rated_in"
 ```
+
+---
+
+## 5.4 Use Case Diagram (PlantUML)
+
+Paste the following code directly into [plantuml.com](https://www.plantuml.com/) to generate the Use Case Diagram:
+
+```plantuml
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+actor "Customer" as customer
+actor "Kitchen Owner" as owner
+actor "Delivery Partner" as rider
+actor "Administrator" as admin
+
+rectangle "Provender Food Delivery System" {
+  ' Customer Use Cases
+  usecase "Browse Kitchens & Cuisines" as UC1
+  usecase "Manage Cart & Checkout" as UC2
+  usecase "Place Order" as UC3
+  usecase "Track Order in Real-Time" as UC4
+  usecase "Manage Address Book" as UC5
+  usecase "Manage Profile Settings" as UC6
+  usecase "Submit Kitchen Review" as UC7
+  
+  ' Kitchen Owner Use Cases
+  usecase "Manage Kitchen Profile" as UC8
+  usecase "Manage Menu Items" as UC9
+  usecase "Process & Prepare Orders" as UC10
+  
+  ' Delivery Partner Use Cases
+  usecase "View Available Deliveries" as UC11
+  usecase "Accept & Deliver Order" as UC12
+  usecase "Update Delivery Status" as UC13
+  
+  ' Admin Use Cases
+  usecase "Manage Users & Roles" as UC14
+  usecase "Moderate Restaurants & Reviews" as UC15
+  usecase "View System Analytics" as UC16
+}
+
+customer --> UC1
+customer --> UC2
+customer --> UC3
+customer --> UC4
+customer --> UC5
+customer --> UC6
+customer --> UC7
+
+owner --> UC8
+owner --> UC9
+owner --> UC10
+
+rider --> UC11
+rider --> UC12
+rider --> UC13
+
+admin --> UC14
+admin --> UC15
+admin --> UC16
+
+@endum
+```
