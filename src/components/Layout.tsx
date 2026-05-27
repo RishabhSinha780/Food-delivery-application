@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { ShoppingBag, MapPin, User as UserIcon, LogOut, Settings, Key, UserCheck, Eye, EyeOff } from "lucide-react";
+import { ShoppingBag, MapPin, User as UserIcon, LogOut, Settings, Key, UserCheck, Eye, EyeOff, Github, Linkedin, Mail } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/lib/currency";
@@ -169,13 +169,45 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <main>{children}</main>
 
-      <footer className="mt-24 border-t border-border">
-        <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row justify-between gap-6 text-sm">
-          <div>
-            <div className="text-lg font-extrabold tracking-tighter mb-2">PROVENDER</div>
+      <footer className="mt-24 border-t border-border bg-card/30">
+        <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between gap-8 text-sm">
+          <div className="space-y-2">
+            <div className="text-lg font-extrabold tracking-tighter">PROVENDER</div>
             <p className="text-muted-foreground max-w-xs">Crave the city, delivered uncompromised.</p>
           </div>
-          <div className="label-mono">© 2026 — Demo build</div>
+          
+          <div className="flex flex-col gap-2.5">
+            <h4 className="font-semibold text-foreground uppercase tracking-wider text-xs">About Developer</h4>
+            <div className="flex flex-col gap-2 text-muted-foreground">
+              <a 
+                href="https://github.com/RishabhSinha780" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center gap-2 hover:text-foreground transition-colors"
+              >
+                <Github className="h-4 w-4" />
+                <span>GitHub</span>
+              </a>
+              <a 
+                href="https://www.linkedin.com/in/rishabh-sinha-230314282" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center gap-2 hover:text-foreground transition-colors"
+              >
+                <Linkedin className="h-4 w-4" />
+                <span>LinkedIn</span>
+              </a>
+              <a 
+                href="mailto:rishabhsinha780@gmail.com" 
+                className="flex items-center gap-2 hover:text-foreground transition-colors"
+              >
+                <Mail className="h-4 w-4" />
+                <span>rishabhsinha780@gmail.com</span>
+              </a>
+            </div>
+          </div>
+          
+          <div className="label-mono self-end md:self-center">© 2026</div>
         </div>
       </footer>
 
